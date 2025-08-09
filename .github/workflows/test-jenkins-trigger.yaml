@@ -12,7 +12,7 @@ jobs:
           set -euo pipefail
           JENKINS_URL="http://ip172-18-0-15-d2blqbk69qi000fihbh0-8080.direct.labs.play-with-docker.com"
           JENKINS_JOB_PATH="/job/pflex-test"
-          JENKINS_USER="your-jenkins-username"
+          JENKINS_USER="kooltoon"
           JENKINS_API_TOKEN="117128a450700b3cbf102972c59f19b498"
 
           URL="$JENKINS_URL$JENKINS_JOB_PATH/build?cause=Triggered_from_GitHub"
