@@ -1,16 +1,39 @@
 name: Test Jenkins Trigger
 
 on:
-  workflow_dispatch:  # lets you run manually from Actions tab
+  workflow_dispatch:
+    inputs:
+      cause:
+        description: Optional note
+        required: false
+        default: Triggered from GitHub Actions
 
 jobs:
   trigger-jenkins:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Jenkins Job
+      - name: Trigger Jenkins (no CSRF)
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}   # e.g. /job/pflex-test
+          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }} # GH_SMOKE_TOKEN
+          CAUSE: ${{ github.event.inputs.cause }}
         run: |
-          curl -X POST "$JENKINS_URL$JENKINS_JOB_PATH/build?token=$JENKINS_JOB_TOKEN"
+          set -euo pipefail
+          enc_cause="$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' "$CAUSE")"
+          URL="$JENKINS_URL$JENKINS_JOB_PATH/build?token=$JENKINS_JOB_TOKEN&cause=$enc_cause"
+          echo "POST $URL"
+          code=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST -I "$URL")
+          echo "HTTP $code (expect 201)"
+          test "$code" = "201"
+          echo "Triggered successfully."
+
+      # Optional: fetch last build console after a short wait
+      - name: Get console log
         env:
           JENKINS_URL: ${{ secrets.JENKINS_URL }}
           JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}
-          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }}
+        run: |
+          sleep 3
+          echo "---- Console (lastBuild) ----"
+          curl -fsS "$JENKINS_URL$JENKINS_JOB_PATH/lastBuild/consoleText" | tail -n 100
