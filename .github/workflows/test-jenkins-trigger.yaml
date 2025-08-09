@@ -1,0 +1,16 @@
+name: Test Jenkins Trigger
+
+on:
+  workflow_dispatch:  # lets you run manually from Actions tab
+
+jobs:
+  trigger-jenkins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jenkins Job
+        run: |
+          curl -X POST "$JENKINS_URL$JENKINS_JOB_PATH/build?token=$JENKINS_JOB_TOKEN"
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}
+          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }}
