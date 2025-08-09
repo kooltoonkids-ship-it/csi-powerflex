@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       cause:
-        description: Optional note
+        description: "Optional note"
         required: false
-        default: Triggered from GitHub Actions
+        default: "Triggered from GitHub Actions"
 
 jobs:
   trigger-jenkins:
@@ -16,7 +16,7 @@ jobs:
         env:
           JENKINS_URL: ${{ secrets.JENKINS_URL }}
           JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}   # e.g. /job/pflex-test
-          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }} # GH_SMOKE_TOKEN
+          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }}
           CAUSE: ${{ github.event.inputs.cause }}
         run: |
           set -euo pipefail
@@ -27,13 +27,3 @@ jobs:
           echo "HTTP $code (expect 201)"
           test "$code" = "201"
           echo "Triggered successfully."
-
-      # Optional: fetch last build console after a short wait
-      - name: Get console log
-        env:
-          JENKINS_URL: ${{ secrets.JENKINS_URL }}
-          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}
-        run: |
-          sleep 3
-          echo "---- Console (lastBuild) ----"
-          curl -fsS "$JENKINS_URL$JENKINS_JOB_PATH/lastBuild/consoleText" | tail -n 100
