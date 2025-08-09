@@ -4,26 +4,28 @@ on:
   workflow_dispatch:
     inputs:
       cause:
-        description: "Optional note"
+        description: Optional note
         required: false
-        default: "Triggered from GitHub Actions"
+        default: Triggered from GitHub Actions
 
 jobs:
   trigger-jenkins:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Jenkins (no CSRF)
+      - name: Trigger Jenkins (basic auth)
         env:
-          JENKINS_URL: ${{ secrets.JENKINS_URL }}
-          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}   # e.g. /job/pflex-test
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}            # e.g. http://...:8080
+          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}  # e.g. /job/pflex-test  (include leading /job/)
           JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
           CAUSE: ${{ github.event.inputs.cause }}
         run: |
           set -euo pipefail
-          enc_cause="$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' "$CAUSE")"
+          enc_cause=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$CAUSE")
           URL="$JENKINS_URL$JENKINS_JOB_PATH/build?token=$JENKINS_JOB_TOKEN&cause=$enc_cause"
           echo "POST $URL"
-          code=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST -I "$URL")
+          code=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST -I -u "$JENKINS_USER:$JENKINS_API_TOKEN" "$URL")
           echo "HTTP $code (expect 201)"
           test "$code" = "201"
           echo "Triggered successfully."
