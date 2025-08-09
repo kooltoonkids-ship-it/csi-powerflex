@@ -1,31 +1,23 @@
-name: Test Jenkins Trigger
+name: Quick Jenkins Trigger
 
 on:
   workflow_dispatch:
-    inputs:
-      cause:
-        description: Optional note
-        required: false
-        default: Triggered from GitHub Actions
 
 jobs:
   trigger-jenkins:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Jenkins (basic auth)
-        env:
-          JENKINS_URL: ${{ secrets.JENKINS_URL }}            # e.g. http://...:8080
-          JENKINS_JOB_PATH: ${{ secrets.JENKINS_JOB_PATH }}  # e.g. /job/pflex-test  (include leading /job/)
-          JENKINS_JOB_TOKEN: ${{ secrets.JENKINS_JOB_TOKEN }}
-          JENKINS_USER: ${{ secrets.JENKINS_USER }}
-          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
-          CAUSE: ${{ github.event.inputs.cause }}
+      - name: Trigger Jenkins directly
         run: |
           set -euo pipefail
-          enc_cause=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$CAUSE")
-          URL="$JENKINS_URL$JENKINS_JOB_PATH/build?token=$JENKINS_JOB_TOKEN&cause=$enc_cause"
+          JENKINS_URL="http://ip172-18-0-15-d2blqbk69qi000fihbh0-8080.direct.labs.play-with-docker.com"
+          JENKINS_JOB_PATH="/job/pflex-test"
+          JENKINS_USER="your-jenkins-username"
+          JENKINS_API_TOKEN="117128a450700b3cbf102972c59f19b498"
+
+          URL="$JENKINS_URL$JENKINS_JOB_PATH/build?cause=Triggered_from_GitHub"
           echo "POST $URL"
-          code=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST -I -u "$JENKINS_USER:$JENKINS_API_TOKEN" "$URL")
-          echo "HTTP $code (expect 201)"
-          test "$code" = "201"
+          code=$(curl -fsS -o /dev/null -w "%{http_code}" -I -X POST \
+                 -u "$JENKINS_USER:$JENKINS_API_TOKEN" "$URL")
+          echo "HTTP $code (expect 201)"; test "$code" = "201"
           echo "Triggered successfully."
